@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org/) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# ポートフォリオ
 
-## Getting Started
+このリポジトリは、私の個人開発中のプロジェクトです。
 
-First, run the development server:
+開発途中のプロジェクトのため、いくつかの機能が不足していますが、デモとして使用可能なレベルの機能を有しています。
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 概要
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+釣りのポイント制バトルをするためのアプリです。
+SNSの友達と釣りのバトルをするときに使うことを想定しています。
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
-This project uses [`next/font`](https://nextjs.org/docs/basic-features/font-optimization) to automatically optimize and load Inter, a custom Google Font.
+## デモ
+URL:https://main.d36ssoxvo58uld.amplifyapp.com/
 
-## Learn More
+全ての機能がお使いいただけますが、時間によって以下の画面が切り替わるようになっています。
 
-To learn more about Next.js, take a look at the following resources:
+以下のリンクは時間の調整がしてありますので、ご利用ください。
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+対戦前の画面：https://main.d36ssoxvo58uld.amplifyapp.com/group/QfbPyQFokd136RJuAyut
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js/) - your feedback and contributions are welcome!
+対戦中の画面：https://main.d36ssoxvo58uld.amplifyapp.com/group/SW8wmMA8IW3F7moQdJwr
 
-## Deploy on Vercel
+対戦後の画面：https://main.d36ssoxvo58uld.amplifyapp.com/group/5mW7ikH3GoVEMowtCotm
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+## 機能
+
+- URLベースでの共有機能
+- FireStoreのによる、釣果情報の保持
+- 釣果ポイントによるランキング機能
+
+## インストール方法
+
+1. リポジトリをクローンします：
+    ```bash
+    git clone https://github.com/hyrooon/fishing-battle-portfolio.git
+    ```
+2. プロジェクトディレクトリに移動します：
+
+3. 依存関係をインストールします：
+    ```bash
+    npm install
+    ```
+
+4. Firebase環境の構築
+
+4. firebaseConfig.tsに自身のFirebase環境のデータをセット
+
+5. 開発サーバーを起動します：
+    ```bash
+    npm run dev
+    ```
+
+## 使用方法
+
+ポートフォリオを表示するには、ブラウザを開いて `http://localhost:3000` にアクセスしてください。
+
+## 使用技術
+
+- HTML、TailwindCSS、TypeScript
+- React,Next
+- Firebase
+- hosting Amplify
