@@ -74,8 +74,10 @@ const New = () => {
           ref={memberRef}
           className="border border-gray-300 p-2 rounded bg-gray-100 w-full"
         >
-          {documents?.groupMembers.map((member) => (
-            <option value={member}>{member}</option>
+          {documents?.groupMembers.map((member, index) => (
+            <option key={index} value={member}>
+              {member}
+            </option>
           ))}
         </select>
       </div>
@@ -95,8 +97,10 @@ const New = () => {
           ref={fishRef}
           className="border border-gray-300 p-2 rounded bg-gray-100 w-full"
         >
-          {documents?.regulation.fishRegulation.map((fish) => (
-            <option value={fish.name}>{fish.name}</option>
+          {documents?.regulation.fishRegulation.map((fish, index) => (
+            <option key={index} value={fish.name}>
+              {fish.name}
+            </option>
           ))}
         </select>
       </div>

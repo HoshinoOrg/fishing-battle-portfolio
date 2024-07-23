@@ -235,11 +235,8 @@ const DuringTournamentUI: React.FC<DuringTournamentUIProps> = ({
         </button>
         <div className="mt-8 ">
           {doc?.result.map((result, index) => (
-            <div>
-              <div
-                key={index}
-                className="flex-low flex justify-between  items-center "
-              >
+            <div key={index}>
+              <div className="flex-low flex justify-between  items-center ">
                 <div className="flex flex-col mr-8">
                   <span className="font-bold ">{result.memberName}</span>
                   <span>{result.fishName}</span>
