@@ -2,7 +2,12 @@ import { useState } from "react";
 import { useRouter } from "next/router";
 import FirebaseService from "@/firebase/firebaseService";
 import { formatDateInput } from "@/utils/formatDateTime";
-import { generateRandomString } from "@/utils/utils";
+import {
+  areAllFieldsEmpty,
+  generateRandomString,
+  isNullOrEmpty,
+} from "@/utils/utils";
+import { set } from "firebase/database";
 
 interface initialGroupData {
   groupName: string;
@@ -15,11 +20,24 @@ interface initialGroupData {
   };
 }
 
+type GroupDaraError = {
+  groupNameError: string;
+  groupMembersError: string;
+  dateError: string;
+  regulationError: string;
+};
+
 const useGroupData = () => {
   const [groupName, setGroupName] = useState("");
   const [groupMembers, setGroupMembers] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [error, setError] = useState<GroupDaraError>({
+    groupNameError: "",
+    groupMembersError: "",
+    dateError: "",
+    regulationError: "",
+  });
   const [fishRegulation, setFishRegulation] = useState<
     { name: string; point: number }[]
   >([
@@ -85,6 +103,12 @@ const useGroupData = () => {
       },
     };
 
+    let error = validationGroupData(addData);
+    setError(error);
+    if (!areAllFieldsEmpty(error)) {
+      return;
+    }
+
     try {
       let id = await firebaseService.addDocumentWithId(path, addData); // 非同期処理を待つ
       return path;
@@ -93,7 +117,45 @@ const useGroupData = () => {
       throw error;
     }
   };
-
+  const validationGroupData = (
+    initialGroupData: initialGroupData
+  ): GroupDaraError => {
+    let error: GroupDaraError = {
+      groupNameError: "",
+      groupMembersError: "",
+      dateError: "",
+      regulationError: "",
+    };
+    if (isNullOrEmpty(initialGroupData.groupName)) {
+      error.groupNameError = "グループ名を入力してください";
+    }
+    if (
+      initialGroupData.groupMembers.length === 0 ||
+      initialGroupData.groupMembers[0] === ""
+    ) {
+      error.groupMembersError = "メンバーを追加してください";
+    }
+    if (
+      isNullOrEmpty(initialGroupData.startDate) ||
+      isNullOrEmpty(initialGroupData.endDate)
+    ) {
+      error.dateError = "開始日時と終了日時を入力してください";
+    } else if (new Date(initialGroupData.startDate) < new Date()) {
+      error.dateError = "開始日時を現在時刻より後に設定してください";
+    } else if (
+      new Date(initialGroupData.startDate) > new Date(initialGroupData.endDate)
+    ) {
+      error.dateError = "開始日時を終了日時より前に設定してください";
+    }
+    if (initialGroupData.regulation.fishRegulation.length === 0) {
+      error.regulationError = "魚のポイントを設定してください";
+    }
+    if (initialGroupData.regulation.sizeRegulation.length === 0) {
+      error.regulationError = "サイズのポイントを設定してください";
+    }
+    console.log(error);
+    return error;
+  };
   return {
     groupName,
     setGroupName,
@@ -109,6 +171,10 @@ const useGroupData = () => {
     sizeRegulation,
     handleSizePointChange,
     postGroupData,
+    setFishRegulation,
+    setSizeRegulation,
+    setGroupMembers,
+    error,
   };
 };
 

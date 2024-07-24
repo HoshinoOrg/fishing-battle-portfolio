@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { formatDateInput } from "@/utils/formatDateTime";
 import MainButton from "@/components/MainButton";
 import SubButton from "@/components/SubButton";
 import RegulationConfigDialog from "@/components/RegulationConfigDialog";
 import useGroupData from "@/hooks/useGroupData";
+import FirebaseService, { BattleConfig } from "@/firebase/firebaseService";
 
 const Index = () => {
   const {
@@ -22,11 +23,43 @@ const Index = () => {
     sizeRegulation,
     handleSizePointChange,
     postGroupData,
+    setFishRegulation,
+    setSizeRegulation,
+    setGroupMembers,
     error,
   } = useGroupData();
 
   const [isDialogOpen, setDialogOpen] = useState(false);
   const router = useRouter();
+  const [id, setId] = useState<string>("");
+  useEffect(() => {
+    if (typeof router.query.id === "string") {
+      const firebaseService = new FirebaseService("groups");
+      const { id } = router.query;
+      setId(id);
+      const fetchData = async () => {
+        const docs = await firebaseService.getBattleConfigById(id as string);
+        if (docs !== null) {
+          // result が null でない場合、結果を配列にラップして setDocuments に渡す
+          setDocuments(docs); // result を Document[] に適合させる
+        } else {
+          // result が null の場合、documents を空の配列に設定する（または適切なデフォルト値に設定）
+          setDocuments(undefined);
+        }
+      };
+
+      fetchData();
+    }
+  }, [router.query.id]);
+
+  const setDocuments = (docs: BattleConfig | undefined) => {
+    setGroupName(docs?.groupName ?? "");
+    setGroupMembers(docs?.groupMembers ?? []);
+    setStartDate(docs?.startDate ?? new Date());
+    setEndDate(docs?.endDate ?? new Date());
+    setFishRegulation(docs?.regulation.fishRegulation ?? []);
+    setSizeRegulation(docs?.regulation.sizeRegulation ?? []);
+  };
 
   const handleAddMember = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,6 +81,9 @@ const Index = () => {
     } catch (error) {
       console.error("Error navigating to about: ", error);
     }
+  };
+  const goBack = () => {
+    router.back();
   };
 
   return (
@@ -131,8 +167,14 @@ const Index = () => {
         onClick={() => setDialogOpen(true)}
       />
       <div className="flex items-center">
-        <MainButton text="グループ作成" onClick={handlePostGroupData} />
+        <MainButton text="グループ設定の変更" onClick={handlePostGroupData} />
       </div>
+      <button
+        className="bg-gray-100 mt-4 rounded w-full py-4 text-gray-500 font-semibold"
+        onClick={goBack}
+      >
+        戻る
+      </button>
       <RegulationConfigDialog
         isDialogOpen={isDialogOpen}
         setDialogOpen={setDialogOpen}

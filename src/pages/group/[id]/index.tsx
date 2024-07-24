@@ -2,97 +2,77 @@ import React, { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import FirebaseService, { BattleData } from "@/firebase/firebaseService";
 import { formatDateForShow } from "@/utils/formatDateTime";
-import { calculatePoint, handleCopyUrl } from "@/utils/utils";
+import {
+  calculatePoint,
+  calculateTotalPoint,
+  handleCopyUrl,
+} from "@/utils/utils";
 import Dialog from "@/components/Dialog";
-
-const BattleState = {
-  BEFORE: "BEFORE",
-  DURING: "DURING",
-  AFTER: "AFTER",
-  UNKNOWN: "UNKNOWN",
-};
+import useBattleState, { BattleState } from "@/hooks/useBattleState";
 
 const Path = () => {
   const router = useRouter();
   const [battleData, setBattleData] = useState<BattleData>();
-  const [battleState, setBattleState] = useState(BattleState.UNKNOWN);
+  const { battleState, getCurrentBattleState } = useBattleState();
   const [isDialogOpen, setDialogOpen] = useState(false);
-  const [id, setId] = useState<string>();
+  const [id, setId] = useState<string>("");
   const [result, setResult] = useState<{ name: string; totalPoint: number }[]>(
     []
   );
 
   const navigateToNewFish = () => {
-    console.log("navigateToNewFish");
     router.push(`/group/${id}/fish/new`);
   };
-
-  const getCurrentBattleState = (startDate: Date, endDate: Date) => {
-    const currentDate = new Date();
-    console.log(currentDate, startDate, endDate);
-    if (currentDate < startDate) {
-      return BattleState.BEFORE;
-    } else if (currentDate >= startDate && currentDate <= endDate) {
-      return BattleState.DURING;
-    } else if (endDate <= currentDate) {
-      return BattleState.AFTER;
-    } else {
-      return BattleState.UNKNOWN;
-    }
+  const navigateToGroupEdit = () => {
+    router.push(`/group/${id}/edit`);
   };
 
-  const calculateTotalPoint = (
-    result: BattleData["result"],
-    regulation: BattleData["regulation"],
-    member: string
-  ) => {
-    let totalPoint = 0;
-    result.forEach((result) => {
-      if (result.memberName === member) {
-        totalPoint += calculatePoint(
-          result.fishName,
-          result.fishSize,
-          regulation
-        );
+  const removeFish = async (index: number) => {
+    const firebaseService = new FirebaseService("groups");
+    let pushData = {
+      result: battleData?.result.filter((_, i) => i !== index),
+    };
+
+    await firebaseService.updateDocument(id, pushData); // 非同期処理を待つ
+    fetchData(id);
+  };
+  const fetchData = async (id: string) => {
+    const firebaseService = new FirebaseService("groups");
+    const docs = await firebaseService.getBattleDataById(id);
+    if (docs !== null) {
+      // result が null でない場合、結果を配列にラップして setDocuments に渡す
+      setBattleData(docs); // result を Document[] に適合させる
+      let currentBattleState = getCurrentBattleState(
+        docs.startDate,
+        docs.endDate
+      );
+
+      if (currentBattleState == BattleState.AFTER) {
+        let result: { name: string; totalPoint: number }[] = [];
+        docs.groupMembers.forEach((member) => {
+          result.push({
+            name: member,
+            totalPoint: calculateTotalPoint(
+              docs.result,
+              docs.regulation,
+              member
+            ),
+          });
+        });
+        result.sort((a, b) => b.totalPoint - a.totalPoint);
+        setResult(result);
       }
-    });
-    return totalPoint;
+    } else {
+      // result が null の場合、documents を空の配列に設定する（または適切なデフォルト値に設定）
+      setBattleData(undefined);
+    }
   };
 
   useEffect(() => {
     if (typeof router.query.id === "string") {
-      const firebaseService = new FirebaseService("groups");
       const { id } = router.query;
       setId(id);
-      const fetchData = async () => {
-        const docs = await firebaseService.getBattleDataById(id as string);
-        if (docs !== null) {
-          // result が null でない場合、結果を配列にラップして setDocuments に渡す
-          setBattleData(docs); // result を Document[] に適合させる
-          let battleState = getCurrentBattleState(docs.startDate, docs.endDate);
-          setBattleState(battleState);
-          if (battleState == BattleState.AFTER) {
-            let result: { name: string; totalPoint: number }[] = [];
-            docs.groupMembers.forEach((member) => {
-              result.push({
-                name: member,
-                totalPoint: calculateTotalPoint(
-                  docs.result,
-                  docs.regulation,
-                  member
-                ),
-              });
-            });
-            result.sort((a, b) => b.totalPoint - a.totalPoint);
-            setResult(result);
-          }
-        } else {
-          // result が null の場合、documents を空の配列に設定する（または適切なデフォルト値に設定）
-          setBattleData(undefined);
-        }
-      };
-
-      fetchData();
+      fetchData(id);
     }
   }, [router.query.id]);
 
@@ -146,11 +126,19 @@ const Path = () => {
       {(() => {
         switch (battleState) {
           case BattleState.BEFORE:
-            return battleData && <BeforeTournamentUI doc={battleData} />;
+            return (
+              battleData && (
+                <BeforeTournamentUI
+                  doc={battleData}
+                  navigateToGroupEdit={navigateToGroupEdit}
+                />
+              )
+            );
           case BattleState.DURING:
             return (
               <DuringTournamentUI
                 navigateToNewFish={navigateToNewFish}
+                removeFish={removeFish}
                 doc={battleData}
               />
             );
@@ -201,14 +189,18 @@ const Path = () => {
 
 interface BeforeTournamentUIProps {
   doc: BattleData;
+  navigateToGroupEdit: () => void;
 }
-const BeforeTournamentUI: React.FC<BeforeTournamentUIProps> = ({ doc }) => {
+const BeforeTournamentUI: React.FC<BeforeTournamentUIProps> = ({
+  doc,
+  navigateToGroupEdit,
+}) => {
   return (
     <div>
       <div>
         <button
           className="bg-gray-100 mt-4 rounded w-full py-4 text-gray-500 font-semibold"
-          onClick={() => {}}
+          onClick={navigateToGroupEdit}
         >
           グループ編集
         </button>
@@ -218,10 +210,12 @@ const BeforeTournamentUI: React.FC<BeforeTournamentUIProps> = ({ doc }) => {
 };
 interface DuringTournamentUIProps {
   navigateToNewFish: () => void;
+  removeFish: (index: number) => void;
   doc: BattleData | undefined;
 }
 const DuringTournamentUI: React.FC<DuringTournamentUIProps> = ({
   navigateToNewFish,
+  removeFish,
   doc,
 }) => {
   return (
@@ -251,7 +245,7 @@ const DuringTournamentUI: React.FC<DuringTournamentUIProps> = ({
                     )}
                     Point
                   </div>
-                  <button>編集</button>
+                  <button onClick={() => removeFish(index)}>削除</button>
                 </div>
               </div>
               <hr className="my-4" />
@@ -280,14 +274,13 @@ const AfterTournamentUI: React.FC<AfterTournamentUIProps> = ({ result }) => {
         onClose={() => setDialogOpen(false)}
         zIndex={10}
       >
-        <div className="items-center">
+        <div className="items-center mb-8 mx-8">
           <h2 className="font-bold">結果</h2>
           {result.map((result, index) => (
             <div className="mt-4 flex justify-between" key={index}>
               <span className="mr-8">{index + 1}位</span>
               <span className="mr-8">{result.name}</span>
               <span>{result.totalPoint} Point</span>
-
               <hr />
             </div>
           ))}
